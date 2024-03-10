@@ -20,7 +20,7 @@ def query_catalog_items():
         conn = get_db_connection()
         topic = params["topic"]
         query_res = conn.cursor().execute("SELECT * FROM catalog_item WHERE topic = ?", (topic,))
-        return jsonify([dict(row) for row in query_res.fetchall()])
+        return jsonify({"items": [dict(row) for row in query_res.fetchall()]})
     elif params.keys().__contains__("item_number"):
         conn = get_db_connection()
         item_number = params["item_number"]
