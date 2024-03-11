@@ -15,27 +15,33 @@ def get_db_connection():
 def query_catalog_items():
     params = request.args
     if len(params) == 0:
-        return "No query string found in the request"
+        return jsonify("No query string found in the request")
     elif params.keys().__contains__("topic"):
         conn = get_db_connection()
         topic = params["topic"]
         query_res = conn.cursor().execute("SELECT * FROM catalog_item WHERE topic = ?", (topic,))
-        return jsonify({"items": [dict(row) for row in query_res.fetchall()]})
+        rows = query_res.fetchall()
+        if rows is None or len(rows) == 0:
+            return jsonify("No such topic exists")
+        return jsonify({"items": [dict(row) for row in rows]})
     elif params.keys().__contains__("item_number"):
         conn = get_db_connection()
         item_number = params["item_number"]
         query_res = conn.cursor().execute("SELECT * FROM catalog_item WHERE itemnumber = ?", (item_number,))
-        return jsonify(dict(query_res.fetchone()))
+        rows = query_res.fetchall()
+        if rows is None or len(rows) == 0:
+            return jsonify("No such item exists")
+        return jsonify(dict(rows[0]))
 
     else:
-        return "Invalid query parameters"
+        return jsonify("Invalid query parameters")
 
 
 @app.route('/update', methods=['PATCH'])
 def update_catalog_item():
     data = request.json
     if data is None or not data:
-        return "Invalid request data"
+        return jsonify("Invalid request data")
     if data.keys().__contains__("item_number") and (
             data.keys().__contains__("stock_count") or data.keys().__contains__("cost")):
 
@@ -52,10 +58,10 @@ def update_catalog_item():
             item_number = data["item_number"]
             conn.cursor().execute("UPDATE catalog_item SET cost = ? WHERE itemnumber = ?", (cost, item_number))
             conn.commit()
-        return "Updated record successfully"
+        return jsonify("Updated record successfully")
     else:
-        return "Invalid request data or missing item number"
+        return jsonify("Invalid request data or missing item number")
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5050)
